@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: qa
+  name: myapp
+  labels:
+    app: tesla
+spec:
+  containers:
+  - name: webapp
+    image: mylandmarktech/java-web-app
+    ports:
+    - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: qa
+  name: myappsvc
+spec:
+  type: ClusterIP
+  selector:
+    app: tesla
+    app: fe
+  ports:
+    - port: 80
