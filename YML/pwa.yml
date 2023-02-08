@@ -1,0 +1,21 @@
+kind: ReplicationController 
+apiVersion: v1  
+metadata:
+  name: pythonapp
+  labels:
+    app: python  
+spec:
+  selector :
+    app: webapp  
+  replicas: 2
+  template:
+    metadata:
+      name: python-web-app 
+      labels:
+        app: webapp   
+    spec:  
+      containers:
+      - name: pythonapp  
+        image: mylandmarktech/python-flask-app    
+        ports:
+        - containerPort: 5000
