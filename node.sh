@@ -1,18 +1,34 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-#Make sure to Run as Root
+# update package
+    sudo apt-get update
+    sudo apt-get install -y wget
+    sudo apt install -y net-tools
+    sudo apt-get install -y tree
+    sudo apt-get install -y git
 
-# change Hostname [node1]
-
-    sudo hostnamectl set-hostname  node1
-
-# Disable swap & add kernel settings
-
-    swapoff -a
-    sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+#hostname
+    sudo hostnamectl set-hostname node1
 
 
-# Add  kernel settings & Enable IP tables(CNI Prerequisites)
+#install and run apache2   
+    #sudo apt install -y apache2
+    #sudo systemctl start apache2
+
+#git pull
+    mkdir /home/ubuntu/setup
+    cd /home/ubuntu/setup || exit
+    sudo git init
+    sudo git clone https://github.com/TMRDevOps/terrasetup.git
+
+
+#2) Disable swap & add kernel settings
+
+swapoff -a
+sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+
+
+#3) Add  kernel settings & Enable IP tables(CNI Prerequisites)
 
 cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 overlay
@@ -30,81 +46,75 @@ EOF
 
 sysctl --system
 
-#4) Install Container D
+#4) Install containerd run time
 
-    #To install containerd, first install its dependencies.
+#To install containerd, first install its dependencies.
 
-    apt-get update -y
-    apt-get install ca-certificates curl gnupg lsb-release -y
+apt-get update -y
+apt-get install ca-certificates curl gnupg lsb-release -y
 
-    #Note: We are not installing Docker Here.Since containerd.io package is part of docker apt repositories hence we added docker repository & it's key to download and install containerd.
-    # Add Docker’s official GPG key:
-    sudo mkdir -p /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+#Note: We are not installing Docker Here.Since containerd.io package is part of docker apt repositories hence we added docker repository & it's key to download and install containerd.
+# Add Docker’s official GPG key:
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 
-    #Use follwing command to set up the repository:
+#Use follwing command to set up the repository:
 
-    echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-    $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-    # Install containerd
+# Install containerd
 
-    apt-get update -y
-    apt-get install containerd.io -y
+apt-get update -y
+apt-get install containerd.io -y
 
-    # Generate default configuration file for containerd
+# Generate default configuration file for containerd
 
-    #Note: Containerd uses a configuration file located in /etc/containerd/config.toml for specifying daemon level options.
-    #The default configuration can be generated via below command.
+#Note: Containerd uses a configuration file located in /etc/containerd/config.toml for specifying daemon level options.
+#The default configuration can be generated via below command.
 
-    containerd config default > /etc/containerd/config.toml
+containerd config default > /etc/containerd/config.toml
 
-    # Run following command to update configure cgroup as systemd for contianerd.
+# Run following command to update configure cgroup as systemd for contianerd.
 
-    sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
+sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
 
-    # Restart and enable containerd service
+# Restart and enable containerd service
 
-    systemctl restart containerd
-    systemctl enable containerd
+systemctl restart containerd
+systemctl enable containerd
 
 #5) Installing kubeadm, kubelet and kubectl
 
-    # Update the apt package index and install packages needed to use the Kubernetes apt repository:
+# Update the apt package index and install packages needed to use the Kubernetes apt repository:
 
-    apt-get update
-    apt-get install -y apt-transport-https ca-certificates curl
+apt-get update
+apt-get install -y apt-transport-https ca-certificates curl
 
-    # Download the Google Cloud public signing key:
+# Download the Google Cloud public signing key:
 
-    curl -fsSLo /etc/apt/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+curl -fsSLo /etc/apt/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
 
-    # Add the Kubernetes apt repository:
+# Add the Kubernetes apt repository:
 
-    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
-    # Update apt package index, install kubelet, kubeadm and kubectl, and pin their version:
+# Update apt package index, install kubelet, kubeadm and kubectl, and pin their version:
 
-    apt-get update
-    apt-get install -y kubelet kubeadm kubectl
+apt-get update
+apt-get install -y kubelet kubeadm kubectl
 
-    # apt-mark hold will prevent the package from being automatically upgraded or removed.
+# apt-mark hold will prevent the package from being automatically upgraded or removed.
 
-    apt-mark hold kubelet kubeadm kubectl
+apt-mark hold kubelet kubeadm kubectl
 
-    # Enable and start kubelet service
+# Enable and start kubelet service
 
-    systemctl daemon-reload
-    systemctl start kubelet
-    systemctl enable kubelet.service
-
-
+systemctl daemon-reload
+systemctl start kubelet
+systemctl enable kubelet.service
 
 
-#
-#
-#
-#Make sure you replace the key
-#kubeadm join 172.31.19.177:6443 --token djbme6.9ob7wg9974e1z1mw \
-#        --discovery-token-ca-cert-hash sha256:2f6d55b8b119f8c2ddcbcbb6be8c216318a96d1aa779ccc441a645115f16f5f4
+# sudo kubeadm join 10.0.0.6:6443 --token xmzufh.e0nu3kb5ohijfxyh \
+#         --discovery-token-ca-cert-hash sha256:579b6a53bd00c8483f5150b9fb521b6431fc38b1ac716b8b9a5f668928a93771

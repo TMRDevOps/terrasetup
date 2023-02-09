@@ -8,5 +8,6 @@
 
 kubectl get pods -A
 kubectl get node
-#add pod network CNI to the install
+
+
 kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml

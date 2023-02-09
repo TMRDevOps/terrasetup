@@ -2,9 +2,9 @@ apiVersion: v1
 kind: Pod
 metadata:
   namespace: qa
-  name: myapp
+  name: webapp
   labels:
-    app: tesla
+    app: webapp
 spec:
   containers:
   - name: webapp
@@ -16,11 +16,11 @@ apiVersion: v1
 kind: Service
 metadata:
   namespace: qa
-  name: myappsvc
+  name: appsvc
 spec:
   type: ClusterIP
   selector:
-    app: tesla
-    app: fe
+    app: webapp
   ports:
     - port: 80
+      targetPort: 8080
