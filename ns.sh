@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 kubectl create ns dev;
-kubectl create ns qa
+wait 5;
+kubectl create ns qa;
