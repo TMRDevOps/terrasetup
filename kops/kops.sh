@@ -9,7 +9,6 @@
     wait 5;
 
 # install kops
-    sudo apt install wget -y
     sudo wget https://github.com/kubernetes/kops/releases/download/v1.22.0/kops-linux-amd64
     sudo chmod +x kops-linux-amd64
     sudo mv kops-linux-amd64 /usr/local/bin/kops
@@ -21,5 +20,45 @@
     sudo mv ./kubectl /usr/local/bin/kubectl
 
 # create S3 bucket
-    aws s3 mb s3://tmrs3bucket
+    s3buck="tmrs3bucket"
+    aws s3 mb s3://"$s3buck";
     aws s3 ls # to verify
+
+
+# copy seport commands
+   
+cat >> /home/kops/.bashrc << EOF
+export NAME=class30.k8s.local
+export KOPS_STATE_STORE=s3://class30kops
+EOF
+
+source /home/kops/.bashrc  
+
+#Verify this by running 
+#$ echo $NAME
+#$ echo $KOPS_STATE_STORE
+
+# create ssh key {in -f file with -N no passphrase}
+
+ssh-keygen -f /home/kops/.ssh/id_rsa -q -N ""
+
+# create cluster
+# only use variables in a script
+
+
+kops create cluster --zones us-east-2a --networking weave --master-size t2.medium --master-count 1 --node-size t2.micro --node-count=2 ${NAME};
+wait 5
+# copy the sshkey into your cluster to be able to access your kubernetes node from the kops server
+kops create secret --name ${NAME} sshpublickey admin -i ~/.ssh/id_rsa.pub;
+wait 5
+
+#update cluster
+
+kops update cluster ${NAME} --yes
+
+
+
+###########
+#If you log out and log in run
+
+kops export kubecfg $NAME --admin
