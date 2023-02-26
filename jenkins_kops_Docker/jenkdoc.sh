@@ -16,26 +16,6 @@
     #sudo apt install -y apache2
     #sudo systemctl start apache2
 
-#TMR Repo Setup
-    mkdir /home/jenkins/setup || exit
-    cd /home/jenkins/setup || exit
-    sudo git init
-    sudo git clone https://github.com/TMRDevOps/terrasetup.git
-    sudo chmod 777 -R /home/jenkins/setup/
-    sudo chmod 777 -R /home/jenkins/setup/*
-    sudo chown nobody:nogroup -R /home/jenkins/setup/*
-    sudo chown nobody:nogroup -R /home/jenkins/setup/
-
-    mkdir /home/ubuntu/setup || exit
-    cd /home/ubuntu/setup || exit
-    sudo git init
-    sudo git clone https://github.com/TMRDevOps/terrasetup.git
-    sudo chmod 777 -R /home/ubuntu/setup/
-    sudo chmod 777 -R /home/ubuntu/setup/*
-    sudo chown nobody:nogroup -R /home/ubuntu/setup/*
-    sudo chown nobody:nogroup -R /home/ubuntu/setup/
-
-
 #Setup ssh
    # kops
         sudo adduser kops
@@ -47,7 +27,7 @@
         sudo chmod 600 -R /home/kops/.ssh/authorized_keys
         sudo chmod 700 -R /home/kops/.ssh/
     #Jenkins
-        #sudo adduser jenkins
+        sudo adduser jenkins
         sudo echo "jenkins  ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/jenkins
         sudo mkdir /home/jenkins/.ssh
         sudo cp /home/ubuntu/.ssh/authorized_keys /home/jenkins/.ssh/authorized_keys 
@@ -58,20 +38,54 @@
 
 
 
+
+#TMR Repo Setup
+    
+    mkdir /home/jenkins/setup
+    cd /home/jenkins/setup
+    sudo git init
+    sudo git clone https://github.com/TMRDevOps/terrasetup.git
+    sudo chmod 777 -R /home/jenkins/setup/
+    sudo chmod 777 -R /home/jenkins/setup/*
+    sudo chown nobody:nogroup -R /home/jenkins/setup/*
+    sudo chown nobody:nogroup -R /home/jenkins/setup/
+
+    mkdir /home/ubuntu/setup
+    cd /home/ubuntu/setup
+    sudo git init
+    sudo git clone https://github.com/TMRDevOps/terrasetup.git
+    sudo chmod 777 -R /home/ubuntu/setup/
+    sudo chmod 777 -R /home/ubuntu/setup/*
+    sudo chown nobody:nogroup -R /home/ubuntu/setup/*
+    sudo chown nobody:nogroup -R /home/ubuntu/setup/
+
+
+
+
+
+
 #install Java
     sudo wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.rpm
-    sudo yum install java-11-openjdk-devel -y
+    sudo apt install openjdk-11-jre-headless -y
     wait 5
 
-#add Jenkins Repo
-    sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
-    cd /etc/yum.repos.d/
-    sudo curl -O https://pkg.jenkins.io/redhat-stable/jenkins.repo
 
 #install Jenkins
 
-    sudo yum -y install jenkins  --nobest
+    curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo tee \
+    /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+    echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+    https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+    /etc/apt/sources.list.d/jenkins.list > /dev/null
+    sudo apt-get update
+    sudo apt-get -y install jenkins
     wait 5
+
+#start Jenkins
+    sudo systemctl start jenkins
+    sudo systemctl enable jenkins
+    wait 5
+
 
 #install Docker
     sudo apt-get update
@@ -92,7 +106,7 @@
     wait 5
 
 #add Jenkins to Docker group
-    usermod -aG docker jenkins
+    sudo usermod -aG docker jenkins
 
 #Kops
     # install AWSCLI
@@ -120,8 +134,8 @@
         aws s3 mb s3://"$s3buck";
 # copy seport commands
 cat >> /home/kops/.bashrc << EOF
-export NAME=class30.k8s.local
-export KOPS_STATE_STORE=s3://class30kops
+export NAME=tmr.k8s.local
+export KOPS_STATE_STORE=s3://"tmrs3bucket2";
 EOF
 source /home/kops/.bashrc
 
@@ -129,7 +143,7 @@ source /home/kops/.bashrc
     ssh-keygen -f /home/kops/.ssh/id_rsa -q -N ""
 
 # create cluster
-    kops create cluster --zones us-east-2a --networking weave --master-size t2.medium --master-count 1 --node-size t2.micro --node-count=2 ${NAME};
+eate cluster --zones us-east-1a --networking weave --master-size t2.medium --master-count 1 --node-size t2.m    kops cricro --node-count=1 ${NAME};
     wait 5
 # copy the sshkey into your cluster to be able to access your kubernetes node from the kops server
     kops create secret --name ${NAME} sshpublickey admin -i ~/.ssh/id_rsa.pub;
