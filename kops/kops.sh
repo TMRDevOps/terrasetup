@@ -21,15 +21,15 @@
 
 # create S3 bucket
     s3buck="tmrs3bucket"
-    aws s3 mb s3://"$s3buck";
+    aws s3 mb s3://"tmrs3bucket";
     aws s3 ls # to verify
 
 
 # copy seport commands
    
 cat >> /home/kops/.bashrc << EOF
-export NAME=class30.k8s.local
-export KOPS_STATE_STORE=s3://class30kops
+export NAME=tmr.k8s.local
+export KOPS_STATE_STORE=s3://tmrs3bucket
 EOF
 
 source /home/kops/.bashrc  
